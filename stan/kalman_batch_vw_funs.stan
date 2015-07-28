@@ -1,4 +1,5 @@
 functions {
+  
   int int_number_true(int x) {
     int n;
     n <- 0;
@@ -9,6 +10,7 @@ functions {
     }
     return n;
   }
+  
   vector symmat_to_vector(matrix X) {
     vector[(rows(X) * (rows(X) - 1)) / 2] v;
     int k;
@@ -21,6 +23,7 @@ functions {
     }
     return v;
   }
+  
   matrix vector_to_symmat(vector v) {
     matrix[floor(sqrt(size(v))), floor(sqrt(size(v)))] X;
     k <- 1;
@@ -61,6 +64,7 @@ functions {
     }
     return Y;
   }
+  
   matrix select_mat_col(int X, int indices) {
     matrix[rows(X), size(indices)] Y;
     for (i in 1:rows(X)) {
@@ -70,8 +74,9 @@ functions {
     }
     return Y;
   }
+  
   // select with masks
-  matrix select_vec_mask(int x, int mask) {
+  vector select_vec_mask(vector x, int mask) {
     vector[sum(mask)] y;
     int k;
     k <- 1;
@@ -83,19 +88,13 @@ functions {
     }
     return y;
   }
-  matrix select_mat_rc_mask(int X, int indices) {
-    matrix[sum(mask), sum(mask)] Y;
-    int k;
-    k <- 1;
-    for (i in 1:size(mask)) {
-      if (int_step(mask)) {
-	y[k] <- x[i];
-	k <- k + 1;
-      }
-    }
-    return y;
-  }
 
+  matrix select_matrix_mask(
+  
+  matrix make_symmteric(matrix X) {
+    return 0.5 * (X + X');
+  }
+  
   // kalman_filter_predict_obs
   // kalman_filter_predict_state
   // kalman_filter_update_state
