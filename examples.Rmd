@@ -1,0 +1,144 @@
+---
+title: "Examples"
+author: "Jeffrey B. Arnold"
+date: "August 1, 2015"
+output: html_document
+---
+
+```{r}
+library("KFAS")
+```
+
+```{r equicorr}
+equicorr <- function(sd, rho = 0) {
+  n <- length(sd)
+  m2 <- matrix(rho, n, n)
+  diag(m2) <- 1
+  m1 <- diag(sd)
+  m1 %*% m2 %*% m1
+}
+```
+
+```{r logit}
+# (0, 1) -> R
+logit <- function(x) log(x) - log(1 - x)
+```
+
+```{r logistic}
+# R -> (0, 1)
+logistic <- function(x) 1 / (1 + exp(-x))
+```
+
+```{r bounded}
+# R -> (a, b)
+bounded <- function(x, a = 0, b = 1) {
+  (logistic(x) - a) / (b - a)
+}
+```
+
+```{r invbounded}
+# invbounded (a, b) -> R
+invbounded <- function(x, a = 0, b = 1) {
+  logit((x - a) / (b - a))
+}
+```
+
+
+
+# Nile
+
+```{r Nile}
+## Nile Model
+y <- Nile
+
+modelNile<-SSModel(Nile~SSMtrend(1,Q=list(matrix(NA))),H=matrix(NA))
+modelNile
+modelNile <- fitSSM(inits = c(log(var(Nile)) ,log(var(Nile))), model = modelNile, method='BFGS', control = list(REPORT = 1, trace = 1))$model
+
+modFun <- function(pars) {
+  y <- y
+  Z <- 1
+  H <- exp(pars[1])
+  T <- 1
+  Q <- exp(pars[2])
+  R <- 1
+  SSModel(y = y, Z = Z, H = H, T = T, R = R, Q = Q)
+}
+
+inits <- rep(0.5 * log(var(y)), 2)
+fit <- fitSSM(inits, modFun = modFun)
+
+print(fit$opt$value)
+print(fit$model$H)
+print(fit$model$Q)
+```
+
+# Equicorr
+
+```{r fxrates}
+load("data/divisas.rda")
+fxrates <-
+  scale(log(as.matrix(divisas[ , c(2,3,4)])), scale = FALSE, center = TRUE)
+colnames(fxrates) <- c("BEF", "CHF", "GER")
+```
+
+
+```{r ex_equicorr}
+fx_data <-
+  within(list(), {
+    y <- fxrates
+    mask <- 2 * is.na(y) - 1
+    p <- ncol(y)
+    n <- nrow(y)
+    m <- 3
+    r <- 3
+    c <- array(rep(0, 3))
+    d <- array(rep(0, 3))
+    T <- diag(3)
+    Z <- diag(3)
+    R <- diag(3)
+    a1 <- array(rep(0, 3))
+    P1 <- diag(3) * 10e6
+  })
+
+init <- list(rho = 0.5, tau2 = rep(0.001, 3), sigma = rep(0.001, 3))
+
+
+
+```
+
+
+# Exchange Rate Factor
+
+
+```{r ex_fx_factor}
+# Parameters: Total number = 2 * p
+# Z[2:p]   p - 1    1:(p - 1)
+# diag(H)  p        p:(2*p - 1)
+# Q 1               (2*p)
+
+inits <- c(rep(1, p - 1), log(rep(0.001, p + 1)))
+
+modFun <- function(pars) {
+  y <- fxrates
+  n <- nrow(y)
+  p <- ncol(y)
+  Z <- matrix(c(1, pars[1:(p - 1)]))
+  H <- diag(p)
+  diag(H) <- exp(pars[p:(2 * p - 1)])
+  T <- matrix(1)
+  Q <- matrix(exp(pars[2 * p]))
+  R <- matrix(1)
+  a1 <- 0
+  P1 <- 10e6
+  SSModel(y = y, Z = Z, H = H, T = T, R = R, Q = Q,
+          a1 = a1, P1 = P1)
+}
+fit_fx_factor <- fitSSM(inits, modFun = modFun)
+print(fit_fx_factor)
+```
+
+
+
+
+
